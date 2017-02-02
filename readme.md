@@ -40,7 +40,9 @@ Enhancements
 - Fixed command line parameter handling
 - Dependencies update to a more modern version of Cloudera Distribution of Apache Hadoop (CDH)
 - Replaced java.security.MessageDigest with sphlib to support more digest algorithms
-- Added support for generating other hash types including NTLM, MD4 and Whirlpool 
+- Added support for generating other hash types including NTLM, MD4 and Whirlpool
+- Output is now hex string representation of hash instead of base64 encoded bytes
+
 
 License
 ---
