@@ -2,7 +2,7 @@
 import com.aol.hadoop.rainbow.RainbowInputFormat;
 import com.aol.hadoop.rainbow.RainbowMapper;
 import com.aol.hadoop.rainbow.RainbowReducer;
-import org.apache.commons.cli.Options;
+import org.apache.commons.cli.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -14,6 +14,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+
 import static com.aol.hadoop.rainbow.RainbowConstants.*;
 
 /**
@@ -66,24 +67,52 @@ public class RainbowGenerator extends Configured implements Tool {
 
     @Override
     public int run(final String[] args) throws Exception {
+        Configuration conf = getConf();
+
         // Set Defaults
-        getConf().set("rainbow.algorithm", defaultAlgorithm);
-        getConf().set("rainbow.charset", defaultCharset);
-        getConf().setInt("rainbow.minLength", defaultMinLength);
-        getConf().setInt("rainbow.maxLength", defaultMaxLength);
-        getConf().setInt("rainbow.mappers", defaultMappers);
-        getConf().setInt("rainbow.reducers", defaultReducers);
+        conf.set("rainbow.algorithm", defaultAlgorithm);
+        conf.set("rainbow.charset", defaultCharset);
+        conf.setInt("rainbow.minLength", defaultMinLength);
+        conf.setInt("rainbow.maxLength", defaultMaxLength);
+        conf.setInt("rainbow.mappers", defaultMappers);
+        conf.setInt("rainbow.reducers", defaultReducers);
+
         // Parse Options
         final Options options = new Options();
         options.addOption("a", "rainbow.algorithm", true, "Digest Algorithm");
         options.addOption("c", "rainbow.charset", true, "Password Characterset");
         options.addOption("b", "rainbow.minLength", true, "Minimum password Length");
         options.addOption("e", "rainbow.maxLength", true, "Maximum password Length");
+        options.addOption("h", "help", false, "Displays help");
         options.addOption("m", "rainbow.mappers", true, "Mapper Count");
         options.addOption("r", "rainbow.reducers", true, "Reducer Count");
-        final GenericOptionsParser gop = new GenericOptionsParser(getConf(), options, args);
-        final Job job = createJob(getConf(), new Path(gop.getRemainingArgs()[0]));
+        final GenericOptionsParser gop = new GenericOptionsParser(conf, options, args);
 
+        // Process command line options
+        CommandLine cmd = gop.getCommandLine();
+        if (cmd.hasOption("h")) {
+            help(options);
+        }
+        if (cmd.hasOption("a")) {
+            conf.set("rainbow.algorithm", cmd.getOptionValue("a"));
+        }
+        if (cmd.hasOption("c")) {
+            conf.set("rainbow.charset", cmd.getOptionValue("c"));
+        }
+        if (cmd.hasOption("b")) {
+            conf.set("rainbow.minLength", cmd.getOptionValue("b"));
+        }
+        if (cmd.hasOption("e")) {
+            conf.set("rainbow.maxLength", cmd.getOptionValue("e"));
+        }
+        if (cmd.hasOption("m")) {
+            conf.set("rainbow.mappers", cmd.getOptionValue("m"));
+        }
+        if (cmd.hasOption("r")) {
+            conf.set("rainbow.reducers", cmd.getOptionValue("r"));
+        }
+
+        final Job job = createJob(gop.getConfiguration(), new Path(gop.getRemainingArgs()[0]));
         while (!job.isComplete()) {
             System.out.printf("Map: %7.3f%% Reduce: %7.3f%%\n",
                     job.mapProgress() * 100, job.reduceProgress() * 100);
@@ -91,7 +120,11 @@ public class RainbowGenerator extends Configured implements Tool {
         }
         return 0;
     }
-
+    public void help(Options options) {
+        HelpFormatter help = new HelpFormatter();
+        help.printHelp("RainbowGenerator <args> <output_directory>", options);
+        System.exit(1);
+    }
     public static void main(final String[] args) throws Exception {
         System.exit(ToolRunner.run(new RainbowGenerator(), args));
     }
